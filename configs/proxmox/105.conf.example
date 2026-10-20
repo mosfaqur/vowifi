@@ -1,0 +1,20 @@
+# /etc/pve/lxc/<VMID>.conf
+# Example Proxmox VE LXC configuration for VoWiFi Software UE
+arch: amd64
+cores: 4
+features: nesting=1,keyctl=1
+hostname: vowifi
+memory: 4096
+net0: name=eth0,bridge=vmbr0,firewall=1,gw=192.168.1.1,hwaddr=BC:24:11:CD:DD:5B,ip=192.168.1.105/24,type=veth
+onboot: 1
+ostype: ubuntu
+rootfs: local-lvm:vm-105-disk-0,size=20G
+swap: 512
+unprivileged: 1
+
+# Passthrough of USB Smart Card Reader character device node (Realtek 0bda:0169)
+# Format: dev[n]: <host_path>,mode=<octal_mode>
+dev0: /dev/bus/usb/001/002,mode=0666
+
+# Passthrough of Linux TUN/TAP device node for user-space IPsec ESP tunneling
+dev1: /dev/net/tun,mode=0666

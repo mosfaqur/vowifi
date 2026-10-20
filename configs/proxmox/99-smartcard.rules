@@ -1,0 +1,4 @@
+# /etc/udev/rules.d/99-smartcard.rules
+# Ensure the Realtek USB Smart Card Reader (0bda:0169) maintains 0666 permissions
+# across host reboots and physical USB replugs.
+SUBSYSTEM=="usb", ATTR{idVendor}=="0bda", ATTR{idProduct}=="0169", MODE="0666"

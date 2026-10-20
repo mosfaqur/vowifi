@@ -1,0 +1,49 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual environments
+.venv
+venv/
+ENV/
+env/
+
+# Runtime data & logs
+data/certs/*.crt
+data/certs/*.key
+data/instances/*/logs/
+data/instances/*/run/
+*.log
+
+# Node.js (WebUI)
+node_modules/
+webui/dist/
+webui/node_modules/
+
+# OS specific
+.DS_Store
+Thumbs.db

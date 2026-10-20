@@ -1,0 +1,80 @@
+# /root/vowifi_gateway/data/config.yaml
+# Control plane configuration
+settings:
+  http_port: 8443
+  bind: 0.0.0.0
+  tls:
+    self_signed: true
+    domain: ''
+    cert_path: ''
+    key_path: ''
+  debug:
+    asterisk: true
+    charon: false
+    pcap: false
+  manager_url: ''
+  advertise_address: ''
+  retry:
+    max: 3
+    interval: 30
+    auto_recover: true
+  rekey:
+    minutes: 30
+  ring_timeout: 35
+  webhook:
+    enabled: false
+    url: ''
+    events:
+      incoming_sms: true
+      incoming_call: true
+  telegram:
+    enabled: false
+    bot_token: ''
+    chat_id: ''
+    events:
+      incoming_sms: true
+      incoming_call: true
+  esim:
+    lpac_bin: ''
+    download_timeout: 300
+    auto_process_notifications: true
+
+instances:
+  '1':
+    id: '1'
+    name: VoWiFi-Line-1
+    imsi: '001010123456789'
+    mcc: '001'
+    mnc: '01'
+    iccid: '8900000000000000000'
+    imei: '864210041234567'
+    imeisv: '8642100412345677'
+    reader: imsi:001010123456789
+    reader_index: 0
+    reader_port: 1-7
+    smsc: '+10000000000'
+    msisdn: ''
+    enabled: true
+    sip:
+      listen_addr: 0.0.0.0
+      transport: udp
+      external: []
+      webrtc:
+        enable: true
+        username: webrtc
+        password: SecurePassword123
+    apn: ims
+    idr_mode: apn
+    cp_mode: auto
+    debug:
+      asterisk: true
+      charon: false
+    ports:
+      sip_udp: 5060
+      sip_tls: 5061
+      webrtc: 8089
+      ami: 5038
+      rtp_start: 10000
+      rtp_end: 11000
+    index: 0
+    ami_secret: RandomAmiSecretKeyHere
