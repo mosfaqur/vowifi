@@ -83,9 +83,20 @@ flowchart TD
   * [`configs/vowifi/instance.json.example`](configs/vowifi/instance.json.example) — Rendered per-SIM instance specification.
 * **[`scripts/`](scripts/)**: Helper automation and diagnostic tools.
   * [`scripts/setup_lxc_host.sh`](scripts/setup_lxc_host.sh) — Automates host-level module loading and udev setup.
+  * [`scripts/deploy_lxc.sh`](scripts/deploy_lxc.sh) — Turnkey automated deployment inside the LXC container.
   * [`scripts/build_engine_fast.sh`](scripts/build_engine_fast.sh) — Builds the `vowifi/engine` container image in seconds.
   * [`scripts/check_sim.py`](scripts/check_sim.py) — Standalone diagnostic script to inspect the SIM and test ePDG DNS.
 * **[`Dockerfile.fast`](Dockerfile.fast)**: Layered Dockerfile optimizing build time for the Asterisk VoWiFi engine.
+
+---
+
+## Prerequisites & Checklist
+
+Before deploying, ensure you have:
+1. **USB Smart Card Reader:** A CCID-compliant USB reader (e.g. Realtek, Omnikey, ACS) plugged into the host.
+2. **Physical USIM Card:** A 3GPP LTE/5G SIM card with **VoWiFi / VoLTE service activated** by the carrier (the `ims` APN must be provisioned in the HSS).
+3. **ePDG DNS Reachability:** Carrier ePDG hostname (`epdg.epc.mnc<MNC>.mcc<MCC>.pub.3gppnetwork.org`) must resolve from your network (run `scripts/check_sim.py` to verify).
+4. **Proxmox VE 8+ / Linux:** With kernel IPsec modules enabled.
 
 ---
 
@@ -94,33 +105,34 @@ flowchart TD
 ### 1. Host Preparation (Proxmox Host)
 Run the automated host setup script or manually install the udev rule and load IPsec kernel modules:
 ```bash
-modprobe tun esp4 esp6 xfrm_user af_key xfrm_interface
-cp configs/proxmox/99-smartcard.rules /etc/udev/rules.d/
-udevadm control --reload-rules && udevadm trigger
+# Clone the repository on the Proxmox host
+git clone https://github.com/mosfaqur/vowifi.git /root/vowifi
+/root/vowifi/scripts/setup_lxc_host.sh
 ```
 
 ### 2. Proxmox Container Configuration
-Add character device and TUN passthrough to `/etc/pve/lxc/<VMID>.conf`:
+In `/etc/pve/lxc/<VMID>.conf`, ensure the following passthrough devices and features are enabled:
 ```ini
 features: nesting=1,keyctl=1
 dev0: /dev/bus/usb/001/002,mode=0666
 dev1: /dev/net/tun,mode=0666
 ```
+*(Adjust the USB bus and device numbers to match `lsusb` on your host).*
 
 ### 3. Deploy Inside the LXC Container
+Log in to your Ubuntu 24.04 container and run the automated deployment script:
 ```bash
-# Clone the repository
-git clone https://github.com/pagecat/vowifi_gateway.git /root/vowifi_gateway
-cd /root/vowifi_gateway
-
-# Install dependencies and start control plane
-./install.sh install
-
-# Build the optimized engine container
-docker build -t vowifi/engine -f /root/vowifi/Dockerfile.fast /root/vowifi_gateway/engine
+git clone https://github.com/mosfaqur/vowifi.git /root/vowifi
+/root/vowifi/scripts/deploy_lxc.sh
 ```
+> **Tip:** `deploy_lxc.sh` automatically fetches the upstream gateway codebase, builds the fast Asterisk engine layer in ~30 seconds (bypassing the standard 20-minute compile), and configures the control plane service.
 
-### 4. Access the WebUI
+### 4. Essential Carrier Configuration Note
+When provisioning your SIM line in the WebUI:
+* **APN:** Set to `ims`.
+* **IDr Mode:** If your operator's ePDG rejects registration with `AUTHENTICATION_FAILED (24)`, ensure `idr_mode` is set to **`apn`** (bare string `"ims"`) rather than `fqdn`. See [`docs/OPERATOR_CONFIG_EXAMPLE.md`](docs/OPERATOR_CONFIG_EXAMPLE.md).
+
+### 5. Access the WebUI
 Open your browser and navigate to:
 ```text
 https://<LXC_IP>:8443

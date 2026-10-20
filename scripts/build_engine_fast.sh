@@ -5,8 +5,11 @@
 
 set -euo pipefail
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+
 REPO_DIR="${1:-/root/vowifi_gateway}"
-FAST_DOCKERFILE="${2:-/root/vowifi/Dockerfile.fast}"
+FAST_DOCKERFILE="${2:-$REPO_ROOT/Dockerfile.fast}"
 
 echo "==> Pulling base Asterisk image (phcodercat/asterisk-vowifi:latest)..."
 docker pull phcodercat/asterisk-vowifi:latest
