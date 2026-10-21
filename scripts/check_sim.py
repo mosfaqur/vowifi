@@ -71,6 +71,9 @@ def main():
     # Read EF_DIR to find USIM AID
     conn.transmit([0x00, 0xA4, 0x00, 0x0C, 0x02, 0x2F, 0x00])
     dir_data, sw1, sw2 = conn.transmit([0x00, 0xB2, 0x01, 0x04, 0x00])
+    if sw1 == 0x6C:
+        dir_data, sw1, sw2 = conn.transmit([0x00, 0xB2, 0x01, 0x04, sw2])
+
     aid = None
     if sw1 == 0x90 and len(dir_data) > 4 and dir_data[0] == 0x61:
         aid_len = dir_data[3]
