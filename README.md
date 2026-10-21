@@ -73,6 +73,7 @@ flowchart TD
 * **[`docs/`](docs/)**: In-depth architectural, protocol, and configuration documents.
   * [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — Detailed technical architecture breakdown.
   * [`docs/MULTI_SIM_SETUP.md`](docs/MULTI_SIM_SETUP.md) — Multi-SIM & multi-line concurrency guide.
+  * [`docs/CAPACITY_PLANNING_100_SIMS.md`](docs/CAPACITY_PLANNING_100_SIMS.md) — Capacity planning, resource sizing & hardware architecture for 100 concurrent SIMs.
   * [`docs/PROXMOX_LXC_PASSTHROUGH.md`](docs/PROXMOX_LXC_PASSTHROUGH.md) — Proxmox host udev & unprivileged LXC device configuration.
   * [`docs/VOWIFI_REGISTRATION_TRACE.md`](docs/VOWIFI_REGISTRATION_TRACE.md) — Annotated cryptographic trace of IKE_SA_INIT, EAP-AKA, and HSS responses.
   * [`docs/OPERATOR_CONFIG_EXAMPLE.md`](docs/OPERATOR_CONFIG_EXAMPLE.md) — General operator profile, DNS resolution, and protocol tuning guide.
