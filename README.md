@@ -79,6 +79,7 @@ flowchart TD
   * [`docs/OPERATOR_CONFIG_EXAMPLE.md`](docs/OPERATOR_CONFIG_EXAMPLE.md) — General operator profile, DNS resolution, and protocol tuning guide.
   * [`docs/SMS_DELIVERY_FALSE_FAILURE.md`](docs/SMS_DELIVERY_FALSE_FAILURE.md) — Diagnosis and resolution of false-positive SIP 405 SMS delivery failures.
   * [`docs/INBOUND_CALL_ONE_WAY_AUDIO.md`](docs/INBOUND_CALL_ONE_WAY_AUDIO.md) — Inbound call one-way audio and 10-second dropped call resolution.
+  * [`docs/REVERSE_PROXY_WEBRTC_SETUP.md`](docs/REVERSE_PROXY_WEBRTC_SETUP.md) — Reverse proxy, domain & Cloudflare WebRTC softphone integration guide.
   * [`docs/SOURCES_AND_ATTRIBUTION.md`](docs/SOURCES_AND_ATTRIBUTION.md) — Comprehensive attribution of upstream open-source projects and standards.
 * **[`configs/`](configs/)**: Production configuration examples and templates.
   * [`configs/proxmox/105.conf.example`](configs/proxmox/105.conf.example) — Sample Proxmox container configuration.
@@ -94,6 +95,7 @@ flowchart TD
   * [`scripts/patch_swu_ike.py`](scripts/patch_swu_ike.py) — Compatibility patcher for Python 3.14 multiprocessing & IPv6 link-local derivation.
   * [`scripts/patch_sms_delivery.py`](scripts/patch_sms_delivery.py) — Applies dialplan and control-plane fixes for accurate SMS delivery reporting.
   * [`scripts/patch_inbound_audio.py`](scripts/patch_inbound_audio.py) — Fixes inbound call early media glare, RFC 3262 violations, and RTP keepalive pinholing.
+  * [`scripts/patch_webrtc_proxy.py`](scripts/patch_webrtc_proxy.py) — Adds integrated WebSocket reverse proxy for WebRTC softphones over port 443.
   * [`scripts/check_sim.py`](scripts/check_sim.py) — Standalone diagnostic script to inspect the SIM and test ePDG DNS.
 * **[`Dockerfile.fast`](Dockerfile.fast)**: Layered Dockerfile optimizing build time for the Asterisk VoWiFi engine.
 
