@@ -88,13 +88,14 @@ flowchart TD
   * [`configs/vowifi/instance.json.example`](configs/vowifi/instance.json.example) — Rendered per-SIM instance specification.
 * **[`patches/`](patches/)**: Upstream C patches.
   * [`patches/asterisk/01_rp_ack_submit_report.patch`](patches/asterisk/01_rp_ack_submit_report.patch) — Enables 3GPP TS 24.011 2-byte RP-ACK submit report handling in Asterisk PJSIP messaging.
+  * [`patches/asterisk/02_inbound_sip_dedup_and_dtmf_subset.patch`](patches/asterisk/02_inbound_sip_dedup_and_dtmf_subset.patch) — Deduplicates P-Access-Network-Info headers in session responses and aligns telephone-event DTMF fmtp with RFC 4733 answer subsets.
 * **[`scripts/`](scripts/)**: Helper automation and diagnostic tools.
   * [`scripts/setup_lxc_host.sh`](scripts/setup_lxc_host.sh) — Automates host-level module loading and udev setup.
   * [`scripts/deploy_lxc.sh`](scripts/deploy_lxc.sh) — Turnkey automated deployment inside the LXC container.
   * [`scripts/build_engine_fast.sh`](scripts/build_engine_fast.sh) — Builds the `vowifi/engine` container image in seconds.
   * [`scripts/patch_swu_ike.py`](scripts/patch_swu_ike.py) — Compatibility patcher for Python 3.14 multiprocessing & IPv6 link-local derivation.
   * [`scripts/patch_sms_delivery.py`](scripts/patch_sms_delivery.py) — Applies dialplan and control-plane fixes for accurate SMS delivery reporting.
-  * [`scripts/patch_inbound_audio.py`](scripts/patch_inbound_audio.py) — Fixes inbound call early media glare, RFC 3262 violations, and RTP keepalive pinholing.
+  * [`scripts/patch_inbound_audio.py`](scripts/patch_inbound_audio.py) — Fixes inbound call 10-second drops, RFC 3262 100rel/PRACK negotiation, session timers, and RTP keepalive pinholing.
   * [`scripts/patch_webrtc_proxy.py`](scripts/patch_webrtc_proxy.py) — Adds integrated WebSocket reverse proxy for WebRTC softphones over port 443.
   * [`scripts/check_sim.py`](scripts/check_sim.py) — Standalone diagnostic script to inspect the SIM and test ePDG DNS.
 * **[`Dockerfile.fast`](Dockerfile.fast)**: Layered Dockerfile optimizing build time for the Asterisk VoWiFi engine.
