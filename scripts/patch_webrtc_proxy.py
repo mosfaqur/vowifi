@@ -30,17 +30,34 @@ def patch_main_py(path):
         modified = True
         print(f" [+] Added ssl and websockets imports to {path}.")
 
-    # 2. Update api_softphone to return ws_path
+    # 2. Update api_softphone to return ws_path and ice_servers
     if '"ws_path"' not in content:
         target = '"ws_port": ports.get("webrtc", 8089),\n'
         replacement = (
             '"ws_port": ports.get("webrtc", 8089),\n'
             '        "ws_path": f"/api/instances/{iid}/webrtc/ws",\n'
+            '        "ice_servers": [\n'
+            '            {"urls": "stun:stun.l.google.com:19302"},\n'
+            '            {"urls": "stun:stun1.l.google.com:19302"},\n'
+            '        ],\n'
         )
         if target in content:
             content = content.replace(target, replacement, 1)
             modified = True
-            print(f" [+] Added ws_path to api_softphone in {path}.")
+            print(f" [+] Added ws_path and ice_servers to api_softphone in {path}.")
+    elif '"ice_servers"' not in content:
+        target = '"realm": cfg.ims_realm(inst["mcc"], inst["mnc"]),\n'
+        replacement = (
+            '"realm": cfg.ims_realm(inst["mcc"], inst["mnc"]),\n'
+            '        "ice_servers": [\n'
+            '            {"urls": "stun:stun.l.google.com:19302"},\n'
+            '            {"urls": "stun:stun1.l.google.com:19302"},\n'
+            '        ],\n'
+        )
+        if target in content:
+            content = content.replace(target, replacement, 1)
+            modified = True
+            print(f" [+] Added ice_servers to api_softphone in {path}.")
 
     # 3. Add webrtc_ws_proxy endpoint
     if "async def webrtc_ws_proxy" not in content:
@@ -145,6 +162,8 @@ def patch_softphone_src(path):
     with open(path, "r", encoding="utf-8") as f:
         content = f.read()
 
+    modified = False
+
     target = "    const wsUrl = `wss://${host}:${prov.ws_port}/ws`\n"
     replacement = (
         "    const proto = location.protocol === 'https:' ? 'wss' : 'ws'\n"
@@ -153,9 +172,22 @@ def patch_softphone_src(path):
 
     if target in content:
         content = content.replace(target, replacement, 1)
+        modified = True
+
+    if "this.prov = prov" not in content:
+        content = content.replace("start(prov, host) {\n    if (this.ua) this.stop()", "start(prov, host) {\n    if (this.ua) this.stop()\n    this.prov = prov", 1)
+        modified = True
+
+    old_ice = "pcConfig: { rtcpMuxPolicy: 'require', iceServers: [] }"
+    new_ice = "pcConfig: { rtcpMuxPolicy: 'require', iceServers: (this.prov && this.prov.ice_servers) || [{ urls: 'stun:stun.l.google.com:19302' }, { urls: 'stun:stun1.l.google.com:19302' }] }"
+    if old_ice in content:
+        content = content.replace(old_ice, new_ice)
+        modified = True
+
+    if modified:
         with open(path, "w", encoding="utf-8") as f:
             f.write(content)
-        print(f" [+] Patched softphone source {path}.")
+        print(f" [+] Patched softphone source {path} with STUN iceServers.")
         return True
     else:
         print(f" [.] {path} is already up-to-date.")
@@ -176,34 +208,64 @@ def patch_webui_dist(dist_dir):
                 new = "const E=g.ws_path?`${location.protocol===\"https:\"?\"wss\":\"ws\"}://${location.host}${g.ws_path}`:`wss://${o}:${g.ws_port}/ws`,w=new Zu.WebSocketInterface(E)"
                 if old in c:
                     c = c.replace(old, new)
-                    with open(fp, "w", encoding="utf-8") as fh:
-                        fh.write(c)
-                    print(f" [+] Patched compiled WebUI asset {fp}.")
                     modified = True
 
-    # Cache buster: copy patched JS to index-v2.js and update index.html
+                t1 = "start(g,o){this.ua&&this.stop();"
+                r1 = "start(g,o){this.prov=g;this.ua&&this.stop();"
+                if t1 in c:
+                    c = c.replace(t1, r1, 1)
+                    modified = True
+
+                t2 = 'pcConfig:{rtcpMuxPolicy:"require",iceServers:[]}'
+                r2 = 'pcConfig:{rtcpMuxPolicy:"require",iceServers:(this.prov&&this.prov.ice_servers)||[{urls:"stun:stun.l.google.com:19302"},{urls:"stun:stun1.l.google.com:19302"}]}'
+                if t2 in c:
+                    c = c.replace(t2, r2)
+                    modified = True
+
+                if modified:
+                    with open(fp, "w", encoding="utf-8") as fh:
+                        fh.write(c)
+                    print(f" [+] Patched compiled WebUI asset {fp} with STUN.")
+
+    # Cache buster: copy patched JS to index-v3.js and update index.html
     html_path = os.path.join(dist_dir, "index.html")
     if os.path.exists(html_path):
         with open(html_path, "r", encoding="utf-8") as fh:
             html = fh.read()
-        if "index-v2.js" not in html:
-            # find original asset name
+        if "index-v3.js" not in html:
             m = re.search(r'assets/(index-[^"]+\.js)', html)
             if m:
                 orig_name = m.group(1)
                 orig_path = os.path.join(dist_dir, "assets", orig_name)
-                v2_path = os.path.join(dist_dir, "assets", "index-v2.js")
+                v3_path = os.path.join(dist_dir, "assets", "index-v3.js")
                 if os.path.exists(orig_path):
                     import shutil
-                    shutil.copy2(orig_path, v2_path)
-                    print(f" [+] Created cache-busted asset {v2_path}.")
-                html = html.replace(orig_name, "index-v2.js", 1)
+                    shutil.copy2(orig_path, v3_path)
+                    print(f" [+] Created cache-busted asset {v3_path}.")
+                html = html.replace(orig_name, "index-v3.js", 1)
                 with open(html_path, "w", encoding="utf-8") as fh:
                     fh.write(html)
-                print(f" [+] Updated {html_path} to use index-v2.js.")
+                print(f" [+] Updated {html_path} to use index-v3.js.")
                 modified = True
 
     return modified
+
+
+def patch_rtp_template(path):
+    if not os.path.exists(path):
+        return False
+    with open(path, "r", encoding="utf-8") as f:
+        content = f.read()
+
+    if "stunaddr=" not in content:
+        content = content.replace("[general]\n", "[general]\nstunaddr=stun.l.google.com:19302\n", 1)
+        with open(path, "w", encoding="utf-8") as f:
+            f.write(content)
+        print(f" [+] Added stunaddr to {path}.")
+        return True
+    else:
+        print(f" [.] {path} already has stunaddr.")
+        return False
 
 
 def main():
@@ -212,10 +274,12 @@ def main():
     main_py = os.path.join(target_root, "control/app/main.py")
     softphone_src = os.path.join(target_root, "webui/src/softphone.js")
     dist_dir = os.path.join(target_root, "webui/dist")
+    rtp_j2 = os.path.join(target_root, "engine/templates/rtp.conf.j2")
 
     patch_main_py(main_py)
     patch_softphone_src(softphone_src)
     patch_webui_dist(dist_dir)
+    patch_rtp_template(rtp_j2)
 
 
 if __name__ == "__main__":
