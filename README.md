@@ -9,8 +9,9 @@ A containerized, open-source **Voice over WiFi (VoWiFi / Wi-Fi Calling) Software
 * **Hardware USIM Integration:** Direct PC/SC interface (`pyscard` / `pcscd`) with physical 3GPP USIM / UICC smart cards.
 * **3GPP SWu Interface:** Pure-Python IKEv2 / IPsec client (`swu_ike.py`) executing RFC 4187 **EAP-AKA** authentication via the SIM's onboard Milenage algorithm.
 * **IMS Core (SIP/VoIP):** Powered by **sysmocom Asterisk 20.7.0** with IMS PJSIP, IMS-AKA digest, cellular SMS-over-IP (`SIP MESSAGE`), and P-Access-Network-Info (PANI) header injection.
-* **WebRTC & Softphone:** WebUI dashboard with an integrated browser softphone, real-time line telemetry, and SMS inbox/outbox.
+* **WebRTC & Softphone:** WebUI dashboard with an integrated browser softphone, real-time line telemetry, and SMS inbox/outbox. Supports reverse proxy and custom domain integration.
 * **Proxmox VE 8+ Native:** Designed to run inside unprivileged Proxmox LXC containers with native character device and TUN passthrough.
+* **Turnkey LXC Templates:** Includes pre-packaged Proxmox appliance archives (`local:vztmpl`) and instant linked-clone master templates for rapid multi-SIM scale-out.
 
 ---
 
@@ -78,11 +79,12 @@ flowchart TD
   * [`docs/VOWIFI_REGISTRATION_TRACE.md`](docs/VOWIFI_REGISTRATION_TRACE.md) — Annotated cryptographic trace of IKE_SA_INIT, EAP-AKA, and HSS responses.
   * [`docs/OPERATOR_CONFIG_EXAMPLE.md`](docs/OPERATOR_CONFIG_EXAMPLE.md) — General operator profile, DNS resolution, and protocol tuning guide.
   * [`docs/SMS_DELIVERY_FALSE_FAILURE.md`](docs/SMS_DELIVERY_FALSE_FAILURE.md) — Diagnosis and resolution of false-positive SIP 405 SMS delivery failures.
-  * [`docs/INBOUND_CALL_ONE_WAY_AUDIO.md`](docs/INBOUND_CALL_ONE_WAY_AUDIO.md) — Inbound call one-way audio and 10-second dropped call resolution.
+  * [`docs/INBOUND_CALL_ONE_WAY_AUDIO.md`](docs/INBOUND_CALL_ONE_WAY_AUDIO.md) — Inbound call one-way audio, SDP fmtp answer alignment, and 10-second dropped call resolution.
   * [`docs/REVERSE_PROXY_WEBRTC_SETUP.md`](docs/REVERSE_PROXY_WEBRTC_SETUP.md) — Reverse proxy, domain & Cloudflare WebRTC softphone integration guide.
   * [`docs/SOURCES_AND_ATTRIBUTION.md`](docs/SOURCES_AND_ATTRIBUTION.md) — Comprehensive attribution of upstream open-source projects and standards.
 * **[`configs/`](configs/)**: Production configuration examples and templates.
-  * [`configs/proxmox/105.conf.example`](configs/proxmox/105.conf.example) — Sample Proxmox container configuration.
+  * [`configs/proxmox/105.conf.example`](configs/proxmox/105.conf.example) — Sample active Proxmox container configuration.
+  * [`configs/proxmox/template_107.conf.example`](configs/proxmox/template_107.conf.example) — Clean master Proxmox LXC template configuration.
   * [`configs/proxmox/99-smartcard.rules`](configs/proxmox/99-smartcard.rules) — Host udev rule for persistent CCID permissions.
   * [`configs/vowifi/config.yaml.example`](configs/vowifi/config.yaml.example) — Control plane configuration.
   * [`configs/vowifi/instance.json.example`](configs/vowifi/instance.json.example) — Rendered per-SIM instance specification.
@@ -112,17 +114,50 @@ Before deploying, ensure you have:
 
 ---
 
-## Quick Start
+## Deployment Options
 
-### 1. Host Preparation (Proxmox Host)
-Run the automated host setup script or manually install the udev rule and load IPsec kernel modules:
+### Method A: Turnkey Proxmox LXC Template (Recommended)
+
+A pre-built, sanitized master LXC template is stored in Proxmox with all dependencies, Asterisk IMS patches, Docker images, and auto-detecting control plane pre-installed.
+
+#### Option 1: Proxmox Web GUI
+1. In the Proxmox tree, right-click **`vowifi-template`** (VMID 107) $\rightarrow$ **Clone**.
+2. **Mode:**
+   - **Linked Clone** *(Instant, 0 extra disk space)*
+   - **Full Clone** *(Independent copy)*
+3. Enter your new VMID and Name (e.g. `vowifi-sim2`).
+4. Go to **Network** $\rightarrow$ assign your static IP (or leave as DHCP).
+5. Start container!
+
+*Alternatively*, click **Create CT** at the top right $\rightarrow$ under **Template**, select `local:vztmpl/vowifi-gateway-clean-ubuntu-24.04.tar.zst`.
+
+#### Option 2: Proxmox CLI
 ```bash
-# Clone the repository on the Proxmox host
+# 1. Clone template (e.g. into VMID 108)
+pct clone 107 108 --hostname vowifi-sim2
+
+# 2. Assign static IP
+pct set 108 -net0 name=eth0,bridge=vmbr0,firewall=1,gw=192.168.1.1,ip=192.168.1.108/24
+
+# 3. Pass through the dedicated USB SIM reader (adjust bus/device from lsusb)
+pct set 108 -dev0 /dev/bus/usb/001/005,mode=0666
+
+# 4. Start the container
+pct start 108
+```
+
+---
+
+### Method B: Clean Installation from Scratch
+
+#### 1. Host Preparation (Proxmox Host)
+Run the automated host setup script to configure udev rules and kernel modules:
+```bash
 git clone https://github.com/mosfaqur/vowifi.git /root/vowifi
 /root/vowifi/scripts/setup_lxc_host.sh
 ```
 
-### 2. Proxmox Container Configuration
+#### 2. Proxmox Container Configuration
 In `/etc/pve/lxc/<VMID>.conf`, ensure the following passthrough devices and features are enabled:
 ```ini
 features: nesting=1,keyctl=1
@@ -131,25 +166,41 @@ dev1: /dev/net/tun,mode=0666
 ```
 *(Adjust the USB bus and device numbers to match `lsusb` on your host).*
 
-### 3. Deploy Inside the LXC Container
+#### 3. Deploy Inside the LXC Container
 Log in to your Ubuntu 24.04 container and run the automated deployment script:
 ```bash
 git clone https://github.com/mosfaqur/vowifi.git /root/vowifi
 /root/vowifi/scripts/deploy_lxc.sh
 ```
-> **Tip:** `deploy_lxc.sh` automatically fetches the upstream gateway codebase, builds the fast Asterisk engine layer in ~30 seconds (bypassing the standard 20-minute compile), and configures the control plane service.
+> **Tip:** `deploy_lxc.sh` automatically fetches the gateway codebase, builds the fast Asterisk engine layer in ~30 seconds (bypassing the standard 20-minute compile), and configures the control plane service.
 
-### 4. Essential Carrier Configuration Note
+---
+
+## Configuration & Access
+
+### 1. Essential Carrier Configuration Note
 When provisioning your SIM line in the WebUI:
 * **APN:** Set to `ims`.
 * **IDr Mode:** If your operator's ePDG rejects registration with `AUTHENTICATION_FAILED (24)`, ensure `idr_mode` is set to **`apn`** (bare string `"ims"`) rather than `fqdn`. See [`docs/OPERATOR_CONFIG_EXAMPLE.md`](docs/OPERATOR_CONFIG_EXAMPLE.md).
 
-### 5. Access the WebUI
+### 2. Access the WebUI
 Open your browser and navigate to:
 ```text
 https://<LXC_IP>:8443
 ```
 Accept the self-signed TLS certificate to access the line dashboard, softphone, and SMS messages.
+
+### 3. Verify Registration via CLI
+Check that your line successfully registered to the carrier IMS core:
+```bash
+docker exec vowifi-engine-1 asterisk -rx 'pjsip show registrations'
+```
+Expected output:
+```text
+ <Registration/ServerURI..............................>  <Auth....................>  <Status.......>
+==========================================================================================
+ volte_ims/sip:ims.mnc003.mcc470.3gppnetwork.org         volte_ims                   Registered
+```
 
 ---
 

@@ -1,0 +1,18 @@
+# /etc/pve/lxc/<VMID>.conf
+# Master VoWiFi Gateway LXC Template (Clean, Pre-compiled Asterisk Engine & WebUI)
+arch: amd64
+cores: 4
+dev1: /dev/net/tun,mode=0666
+features: nesting=1,keyctl=1
+hostname: vowifi-template
+memory: 4096
+net0: name=eth0,bridge=vmbr0,firewall=1,ip=dhcp,type=veth
+onboot: 0
+ostype: ubuntu
+rootfs: local-lvm:base-107-disk-0,size=20G
+swap: 512
+template: 1
+unprivileged: 1
+
+# Passthrough of USB Smart Card Reader (uncomment and adjust when attaching a physical reader):
+# dev0: /dev/bus/usb/001/005,mode=0666
