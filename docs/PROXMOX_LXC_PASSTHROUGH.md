@@ -88,6 +88,10 @@ dev1: /dev/net/tun,mode=0666
 | `dev0: /dev/bus/usb/001/002,mode=0666` | Proxmox VE 8+ native device passthrough for the USB smart card reader. Automatically creates the device node inside `/dev/bus/usb/001/002` with 0666 permissions. |
 | `dev1: /dev/net/tun,mode=0666` | Passes `/dev/net/tun` into the container with full read/write permissions for user-space IPsec (XFRM / TUN). |
 
+> [!TIP]
+> **USB Device Re-enumeration:**
+> When a USB smart card reader is unplugged and reconnected, the Linux kernel assigns the next incremental device number (e.g., `lsusb` shows `Device 004` instead of `Device 002`). Update the `dev0:` line in `/etc/pve/lxc/<VMID>.conf` to match the current device node from `lsusb` and run `pct reboot <VMID>`.
+
 Reboot the container to apply changes:
 ```bash
 pct reboot 105

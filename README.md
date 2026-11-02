@@ -87,6 +87,7 @@ flowchart TD
   * [`scripts/setup_lxc_host.sh`](scripts/setup_lxc_host.sh) — Automates host-level module loading and udev setup.
   * [`scripts/deploy_lxc.sh`](scripts/deploy_lxc.sh) — Turnkey automated deployment inside the LXC container.
   * [`scripts/build_engine_fast.sh`](scripts/build_engine_fast.sh) — Builds the `vowifi/engine` container image in seconds.
+  * [`scripts/patch_swu_ike.py`](scripts/patch_swu_ike.py) — Compatibility patcher for Python 3.14 multiprocessing & IPv6 link-local derivation.
   * [`scripts/check_sim.py`](scripts/check_sim.py) — Standalone diagnostic script to inspect the SIM and test ePDG DNS.
 * **[`Dockerfile.fast`](Dockerfile.fast)**: Layered Dockerfile optimizing build time for the Asterisk VoWiFi engine.
 

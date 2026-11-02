@@ -14,6 +14,11 @@ FAST_DOCKERFILE="${2:-$REPO_ROOT/Dockerfile.fast}"
 echo "==> Pulling base Asterisk image (phcodercat/asterisk-vowifi:latest)..."
 docker pull phcodercat/asterisk-vowifi:latest
 
+if [ -f "$REPO_DIR/engine/swu_ike.py" ]; then
+    echo "==> Applying Python 3.14 & IPv6 compatibility patches to swu_ike.py..."
+    python3 "$SCRIPT_DIR/patch_swu_ike.py" "$REPO_DIR/engine/swu_ike.py"
+fi
+
 echo "==> Building vowifi/engine using fast-layer build..."
 docker build -t vowifi/engine -f "$FAST_DOCKERFILE" "$REPO_DIR/engine"
 
