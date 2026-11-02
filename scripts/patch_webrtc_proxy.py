@@ -121,6 +121,14 @@ def patch_main_py(path):
             modified = True
             print(f" [+] Appended webrtc_ws_proxy WebSocket endpoint to {path}.")
 
+    # 4. Add no-cache header to SPA index.html delivery to prevent stale cache on reverse proxies
+    target_spa = 'if os.path.isfile(index):\n            return FileResponse(index)'
+    repl_spa = 'if os.path.isfile(index):\n            return FileResponse(index, headers={"Cache-Control": "no-cache, no-store, must-revalidate"})'
+    if target_spa in content:
+        content = content.replace(target_spa, repl_spa, 1)
+        modified = True
+        print(f" [+] Added no-cache header for index.html to {path}.")
+
     if modified:
         with open(path, "w", encoding="utf-8") as f:
             f.write(content)
@@ -172,6 +180,29 @@ def patch_webui_dist(dist_dir):
                         fh.write(c)
                     print(f" [+] Patched compiled WebUI asset {fp}.")
                     modified = True
+
+    # Cache buster: copy patched JS to index-v2.js and update index.html
+    html_path = os.path.join(dist_dir, "index.html")
+    if os.path.exists(html_path):
+        with open(html_path, "r", encoding="utf-8") as fh:
+            html = fh.read()
+        if "index-v2.js" not in html:
+            # find original asset name
+            m = re.search(r'assets/(index-[^"]+\.js)', html)
+            if m:
+                orig_name = m.group(1)
+                orig_path = os.path.join(dist_dir, "assets", orig_name)
+                v2_path = os.path.join(dist_dir, "assets", "index-v2.js")
+                if os.path.exists(orig_path):
+                    import shutil
+                    shutil.copy2(orig_path, v2_path)
+                    print(f" [+] Created cache-busted asset {v2_path}.")
+                html = html.replace(orig_name, "index-v2.js", 1)
+                with open(html_path, "w", encoding="utf-8") as fh:
+                    fh.write(html)
+                print(f" [+] Updated {html_path} to use index-v2.js.")
+                modified = True
+
     return modified
 
 
