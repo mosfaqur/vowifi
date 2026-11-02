@@ -48,6 +48,10 @@ echo "==> Step 4: Installing control plane dependencies and systemd service..."
 cd "$GATEWAY_DIR"
 ./install.sh install --mode local
 
+# 5. Install eSIM requirements (lpac LPA)
+echo "==> Step 5: Installing eSIM / eUICC management requirements..."
+"$SCRIPT_DIR/install_esim_lpac.sh" "$GATEWAY_DIR/data"
+
 IP_ADDR="$(hostname -I | awk '{print $1}')"
 echo ""
 echo "======================================================"

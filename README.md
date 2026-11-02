@@ -10,6 +10,7 @@ A containerized, open-source **Voice over WiFi (VoWiFi / Wi-Fi Calling) Software
 * **3GPP SWu Interface:** Pure-Python IKEv2 / IPsec client (`swu_ike.py`) executing RFC 4187 **EAP-AKA** authentication via the SIM's onboard Milenage algorithm.
 * **IMS Core (SIP/VoIP):** Powered by **sysmocom Asterisk 20.7.0** with IMS PJSIP, IMS-AKA digest, cellular SMS-over-IP (`SIP MESSAGE`), and P-Access-Network-Info (PANI) header injection.
 * **WebRTC & Softphone:** WebUI dashboard with an integrated browser softphone, real-time line telemetry, and SMS inbox/outbox. Supports reverse proxy and custom domain integration.
+* **eSIM / eUICC Management:** Integrated GSMA SGP.22 Local Profile Assistant (`lpac`) for over-the-air profile download, enabling, disabling, and switching on physical eUICC / ESTKme cards directly from the WebUI.
 * **Proxmox VE 8+ Native:** Designed to run inside unprivileged Proxmox LXC containers with native character device and TUN passthrough.
 * **Turnkey LXC Templates:** Includes pre-packaged Proxmox appliance archives (`local:vztmpl`) and instant linked-clone master templates for rapid multi-SIM scale-out.
 
@@ -81,6 +82,7 @@ flowchart TD
   * [`docs/SMS_DELIVERY_FALSE_FAILURE.md`](docs/SMS_DELIVERY_FALSE_FAILURE.md) — Diagnosis and resolution of false-positive SIP 405 SMS delivery failures.
   * [`docs/INBOUND_CALL_ONE_WAY_AUDIO.md`](docs/INBOUND_CALL_ONE_WAY_AUDIO.md) — Inbound call one-way audio, SDP fmtp answer alignment, and 10-second dropped call resolution.
   * [`docs/REVERSE_PROXY_WEBRTC_SETUP.md`](docs/REVERSE_PROXY_WEBRTC_SETUP.md) — Reverse proxy, domain & Cloudflare WebRTC softphone integration guide.
+  * [`docs/ESIM_SETUP_AND_MANAGEMENT.md`](docs/ESIM_SETUP_AND_MANAGEMENT.md) — eSIM / eUICC profile download, switching, and lpac toolchain guide.
   * [`docs/SOURCES_AND_ATTRIBUTION.md`](docs/SOURCES_AND_ATTRIBUTION.md) — Comprehensive attribution of upstream open-source projects and standards.
 * **[`configs/`](configs/)**: Production configuration examples and templates.
   * [`configs/proxmox/105.conf.example`](configs/proxmox/105.conf.example) — Sample active Proxmox container configuration.
@@ -99,6 +101,7 @@ flowchart TD
   * [`scripts/patch_sms_delivery.py`](scripts/patch_sms_delivery.py) — Applies dialplan and control-plane fixes for accurate SMS delivery reporting.
   * [`scripts/patch_inbound_audio.py`](scripts/patch_inbound_audio.py) — Fixes inbound call 10-second drops, RFC 3262 100rel/PRACK negotiation, session timers, and RTP keepalive pinholing.
   * [`scripts/patch_webrtc_proxy.py`](scripts/patch_webrtc_proxy.py) — Adds integrated WebSocket reverse proxy for WebRTC softphones over port 443.
+  * [`scripts/install_esim_lpac.sh`](scripts/install_esim_lpac.sh) — Turnkey compiler and installer for the `lpac` eSIM Local Profile Assistant toolchain.
   * [`scripts/check_sim.py`](scripts/check_sim.py) — Standalone diagnostic script to inspect the SIM and test ePDG DNS.
 * **[`Dockerfile.fast`](Dockerfile.fast)**: Layered Dockerfile optimizing build time for the Asterisk VoWiFi engine.
 
