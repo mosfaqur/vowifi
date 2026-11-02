@@ -80,17 +80,47 @@ systemctl restart vowifi-control
 
 ---
 
-## WebRTC Voice Audio (RTP) Considerations
+## WebRTC Voice Audio (RTP) & ICE Candidate Architecture
 
 While SIP signaling (registration, dialing, call state) rides over the HTTPS/WSS proxy (TCP/443), **voice audio (RTP/SRTP) flows directly via UDP**:
 
-1. **Accessing over Local LAN:**
-   * If your browser is on the same local network as the VoWiFi gateway (e.g. laptop or smartphone on home/office Wi-Fi), Asterisk's built-in ICE host candidates automatically advertise the gateway's LAN IP (`192.168.1.x`).
-   * Audio flows directly between browser and server without needing external port forwards.
+```mermaid
+flowchart LR
+    subgraph LAN["Local LAN Client (e.g. 192.168.1.40 or 192.168.55.5)"]
+        BrowserLAN["Browser Softphone\n(Host ICE Candidate)"]
+    end
 
-2. **Accessing Remotely over Public Internet / Mobile Data:**
-   * Standard reverse proxies and Cloudflare CDN do **not** proxy UDP traffic.
-   * For remote voice calls to function outside the LAN:
-     1. Forward UDP ports **10000–10059** on your WAN router to the VoWiFi host IP (`192.168.1.105`).
-     2. In the WebUI, go to **Settings** → **Advertise address** and enter your router's public WAN IP or DDNS hostname.
-     3. Asterisk will advertise this address in ICE candidates so external browsers can establish direct peer-to-peer SRTP audio streams.
+    subgraph Server["VoWiFi Server (192.168.1.105)"]
+        Engine["Asterisk (vowifi-engine-1)\nHost Candidate: 192.168.1.105\nPorts: 10000-10059/udp"]
+    end
+
+    subgraph WAN["Remote WAN Client (e.g. 4G/LTE mobile)"]
+        BrowserWAN["Browser Softphone\n(srflx Candidate)"]
+    end
+
+    subgraph Router["Office WAN Router (103.204.210.119)"]
+        NAT["Port Forward / Relay"]
+    end
+
+    BrowserLAN <===>|"Direct LAN UDP RTP\n(No Hairpinning Needed)"| Engine
+    BrowserWAN -.->|"UDP 10000-10059"| NAT
+    NAT -.->|"Forward to 192.168.1.105"| Engine
+```
+
+### 1. Avoiding the STUN NAT-Loopback Trap on LAN Browsers
+* When `stunaddr` is configured in Asterisk's `rtp.conf`, Asterisk gathers its reflexive WAN candidate (`103.204.210.119:100xx`).
+* When a LAN browser (or a PC behind a secondary subnet like `192.168.55.0/24`) connects, ICE candidate pair prioritization ranks `srflx <-> srflx` pairs above host pairs.
+* Because standard office routers do **not** support NAT loopback (hairpinning), UDP packets from the LAN directed to `103.204.210.119` are dropped by the router, resulting in total call setup failure or immediate silence.
+* Furthermore, Asterisk's global `stunaddr` causes `res_rtp_asterisk` to send STUN queries on IPv6 sockets used for carrier VoLTE/VoWiFi IMS calls, throwing `Error sending STUN request: Invalid argument` and destabilizing the carrier audio leg.
+* **Fix**: Asterisk `rtp.conf` relies exclusively on `[ice_host_candidates] 172.17.0.2 => 192.168.1.105,include_local_address`. The control plane provides **adaptive provisioning**:
+  - **LAN requests** (`192.168.x.x`, `10.x.x.x`, `127.0.0.1`): Provision `ice_servers: []` for instant, direct LAN WebRTC.
+  - **Domain/WAN requests** (`hi-vowifi.hprbd.com`): Provision STUN iceServers for public traversal.
+
+### 2. Audio Playback Muting Race Condition (`unlockAudio`)
+* In the WebUI softphone client, an autoplay unlock helper previously invoked `el.play()` on an empty audio element and registered a promise callback that executed `el.pause(); el.currentTime = 0;`.
+* When an incoming or outgoing call answered and attached a live remote `MediaStream` to the audio element, the pending promise resolved and paused the audio element, silencing the call audio.
+* **Fix**: `unlockAudio()` now primes an `AudioContext` without asynchronously calling `pause()` on the `<audio>` element.
+
+### 3. Non-Blocking Audio Element Rendering
+* An `<audio>` tag rendered with `style={{ display: 'none' }}` is excluded from the browser layout tree, which modern Chromium/WebKit engines can throttle or mute.
+* **Fix**: The audio element is rendered with fixed off-screen CSS (`position: fixed; top: -9999px; left: -9999px; width: 1px; height: 1px; opacity: 0; pointer-events: none`).
