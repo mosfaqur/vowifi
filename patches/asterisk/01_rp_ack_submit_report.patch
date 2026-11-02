@@ -1,0 +1,41 @@
+diff --git a/res/res_pjsip_messaging.c b/res/res_pjsip_messaging.c
+index db3d390..e170e15 100644
+--- a/res/res_pjsip_messaging.c
++++ b/res/res_pjsip_messaging.c
+@@ -612,7 +612,7 @@ static void parse_rpdata(pjsip_rx_data *rdata, struct ast_msg *msg, int *ack_ref
+ 	int len = rdata->msg_info.msg->body->print_body(
+ 		rdata->msg_info.msg->body, (char *)buf, sizeof(buf));
+ 
+-	if (len < 3) {
++	if (len < 2) {
+ 		ast_log(LOG_DEBUG, "MESSAGE RP-DATA is too short or error: %d.\n", len);
+ 		return;
+ 	}
+@@ -620,8 +620,9 @@ static void parse_rpdata(pjsip_rx_data *rdata, struct ast_msg *msg, int *ack_ref
+ 	char buf2[MAX_BODY_SIZE * 2 + 1];
+ 	hex_body(buf2, buf, len);
+ 	ast_log(LOG_DEBUG, "SMS RP-DATA '%s'.\n", buf2);
+-	switch (buf[0])
++	switch (buf[0] & 0x07)
+ 	{
++	case 0x00:
+ 	case 0x01: {
+ 		unsigned char *p;
+ 		/* RP-DATA */
+@@ -644,8 +645,14 @@ static void parse_rpdata(pjsip_rx_data *rdata, struct ast_msg *msg, int *ack_ref
+ 		parse_tpdu(msg, p + 2, tpdu_len);
+ 		return;
+ 	}
+-	case 0x03: /* RP-ACK */
+-	case 0x05: /* RP-ERROR */
++	case 0x02: /* RP-ACK (network to MS) */
++	case 0x03: /* RP-ACK (MS to network) */
++		ast_log(LOG_DEBUG, "RP-ACK submit report received (MTI 0x%02x)\n", buf[0]);
++		return;
++	case 0x04: /* RP-ERROR (network to MS) */
++	case 0x05: /* RP-ERROR (MS to network) */
++		ast_log(LOG_DEBUG, "RP-ERROR submit report received (MTI 0x%02x)\n", buf[0]);
++		return;
+ 	default:
+ 		ast_log(LOG_WARNING, "Unknown RP-DATA 0x%02x. Dropping message\n", buf[0]);
+ 		return;
