@@ -94,6 +94,15 @@ def patch_pjsip_template(path):
             modified = True
             print(f" [+] Added rtp_symmetric, rtp_ipv6, and rtp_keepalive to {path}.")
 
+    if "100rel=peer_supported" in content:
+        content = content.replace("100rel=peer_supported", "100rel=yes\ntimers=no")
+        modified = True
+        print(f" [+] Changed 100rel to 'yes' and added timers=no in {path}.")
+    elif "100rel=yes" in content and "timers=no" not in content:
+        content = content.replace("100rel=yes", "100rel=yes\ntimers=no")
+        modified = True
+        print(f" [+] Added timers=no to {path}.")
+
     if modified:
         with open(path, "w", encoding="utf-8") as f:
             f.write(content)

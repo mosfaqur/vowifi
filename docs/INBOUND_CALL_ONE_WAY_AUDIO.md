@@ -109,14 +109,16 @@ same => n,Wait(30)
 same => n,Hangup()
 ```
 
-### 2. PJSIP Endpoint Symmetric RTP & Keepalive (`pjsip.conf.j2`)
+### 2. PJSIP Endpoint 100rel, Session Timers & Symmetric RTP (`pjsip.conf.j2`)
 
-Configured symmetric RTP, IPv6 media socket binding, and aggressive RTP keepalives on `[volte_ims]`:
+Configured standard 100rel negotiation, disabled unsolicited session timers, enabled symmetric RTP, IPv6 media socket binding, and aggressive RTP keepalives on `[volte_ims]`:
 
 ```jinja2
 [volte_ims]
 type=endpoint
 ...
+100rel=yes
+timers=no
 rtp_symmetric=yes
 {% if pcscf_is_v6 %}
 rtp_ipv6=yes
@@ -124,11 +126,20 @@ rtp_ipv6=yes
 rtp_keepalive=1
 ```
 
+* `100rel=yes`: Standard RFC 3262 UAS behavior. If the carrier sends `Supported: 100rel` without `Require: 100rel` (as ZTE IMS does on MT calls without preconditions), Asterisk sends standard RFC 3261 `180 Ringing` without PRACK overhead. If the peer sends `Require: 100rel` (preconditions active), Asterisk reliably exchanges PRACK. Previously, `100rel=peer_supported` forced `Require: 100rel` on unrequested calls, causing ZTE IMS dialog state desynchronization and missing final `ACK`.
+* `timers=no`: Prevents Asterisk from adding unsolicited `Require: timer` into the final `200 OK` response. Mobile handsets never force session timers on IMS cores; carrier SBCs reject or ignore responses demanding unsupported UAS timer extensions.
 * `rtp_symmetric=yes`: Latch symmetrically onto incoming RTP from the carrier MGW's dynamic port.
 * `rtp_ipv6=yes`: Explicitly bind IPv6 media sockets when connecting over an IPv6 IMS P-CSCF.
 * `rtp_keepalive=1`: Immediately sends RTP keepalive packets every second from Asterisk to the carrier MGW, keeping carrier firewalls open and triggering the MGW to route downlink audio to Asterisk.
 
-### 3. WebRTC Softphone RTCP-Mux Enforcement (`softphone.js`)
+### 3. Asterisk Core Header & SDP Normalization (`patches/asterisk/02_inbound_sip_dedup_and_dtmf_subset.patch`)
+
+1. **`P-Access-Network-Info` Deduplication (`res_pjsip_session/volte.c`):**
+   * Guarded `volte_add_p_access_network_info()` so it only adds the header if not already present in the SIP message. Prevents duplicate headers violating RFC 7315 and 3GPP TS 24.229.
+2. **RFC 4733 DTMF Event Range Subset (`res_pjsip_sdp_rtp.c`):**
+   * Adjusted telephone-event format parameter from `0-16` to `0-15`. RFC 4733 §2.5.1 dictates answers must be a subset of the offer; carriers offering `0-15` reject answers specifying event 16 (flash).
+
+### 4. WebRTC Softphone RTCP-Mux Enforcement (`softphone.js`)
 
 Updated `answer()` in `softphone.js` and the bundled asset to enforce `rtcpMuxPolicy: 'require'`:
 

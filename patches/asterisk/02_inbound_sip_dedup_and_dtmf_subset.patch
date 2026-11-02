@@ -1,0 +1,28 @@
+diff --git a/res/res_pjsip_sdp_rtp.c b/res/res_pjsip_sdp_rtp.c
+index b1c2a8a..f690457 100644
+--- a/res/res_pjsip_sdp_rtp.c
++++ b/res/res_pjsip_sdp_rtp.c
+@@ -2064,7 +2064,7 @@ static int create_outgoing_sdp_stream(struct ast_sip_session *session, struct as
+ 
+ 					if ((attr = generate_rtpmap_attr2(session, media, pool, rtp_code, 0, NULL, index, AST_VECTOR_GET(&sample_rates, i)))) {
+ 						media->attr[media->attr_count++] = attr;
+-						snprintf(tmp, sizeof(tmp), "%d 0-16", (rtp_code));
++						snprintf(tmp, sizeof(tmp), "%d 0-15", (rtp_code));
+ 						attr = pjmedia_sdp_attr_create(pool, "fmtp", pj_cstr(&stmp, tmp));
+ 						media->attr[media->attr_count++] = attr;
+ 
+diff --git a/res/res_pjsip_session/volte.c b/res/res_pjsip_session/volte.c
+index 1b417ae..aed6067 100644
+--- a/res/res_pjsip_session/volte.c
++++ b/res/res_pjsip_session/volte.c
+@@ -151,6 +151,10 @@ pj_status_t volte_add_p_access_network_info(pjsip_tx_data *tdata, char *info)
+ {
+ 	pj_status_t status;
+ 
++	if (pjsip_msg_find_hdr_by_name(tdata->msg, &STR_P_ACCESS_NETWORK_INFO, NULL)) {
++		return PJ_SUCCESS;
++	}
++
+ 	const pj_str_t info_str = { info, strlen(info) };
+ 
+ 	/* "P-Access-Network-Info" */
