@@ -102,6 +102,7 @@ flowchart TD
   * [`scripts/patch_inbound_audio.py`](scripts/patch_inbound_audio.py) — Fixes inbound call 10-second drops, RFC 3262 100rel/PRACK negotiation, session timers, and RTP keepalive pinholing.
   * [`scripts/patch_webrtc_proxy.py`](scripts/patch_webrtc_proxy.py) — Adds integrated WebSocket reverse proxy for WebRTC softphones over port 443.
   * [`scripts/install_esim_lpac.sh`](scripts/install_esim_lpac.sh) — Turnkey compiler and installer for the `lpac` eSIM Local Profile Assistant toolchain.
+  * [`scripts/download_lxc_template.sh`](scripts/download_lxc_template.sh) — Turnkey downloader and verifier for the Proxmox LXC template from GitHub Releases.
   * [`scripts/check_sim.py`](scripts/check_sim.py) — Standalone diagnostic script to inspect the SIM and test ePDG DNS.
 * **[`Dockerfile.fast`](Dockerfile.fast)**: Layered Dockerfile optimizing build time for the Asterisk VoWiFi engine.
 
@@ -121,10 +122,19 @@ Before deploying, ensure you have:
 
 ### Method A: Turnkey Proxmox LXC Template (Recommended)
 
-A pre-built, sanitized master LXC template is stored in Proxmox with all dependencies, Asterisk IMS patches, Docker images, and auto-detecting control plane pre-installed.
+A pre-built, sanitized master LXC template is available for instant deployment with all dependencies, Asterisk IMS patches, Docker images, eSIM `lpac` toolchain, and auto-detecting control plane pre-installed.
 
-#### Option 1: Proxmox Web GUI
-1. In the Proxmox tree, right-click **`vowifi-template`** (VMID 107) $\rightarrow$ **Clone**.
+#### 1. Download Template into Proxmox Host
+Run this single command directly on your Proxmox host (`root@192.168.1.3`):
+```bash
+curl -fsSL https://raw.githubusercontent.com/mosfaqur/vowifi/main/scripts/download_lxc_template.sh | bash
+```
+*(This automatically downloads all multi-part release assets from GitHub Releases, reassembles the archive, verifies SHA256 checksums, and registers it in `local:vztmpl`).*
+
+#### 2. Deploy Container
+
+##### Option 1: Proxmox Web GUI
+1. In the Proxmox tree, right-click **`vowifi-template`** (VMID 107) $\rightarrow$ **Clone** (or click **Create CT** at top right $\rightarrow$ select `local:vztmpl/vowifi-gateway-clean-ubuntu-24.04.tar.zst`).
 2. **Mode:**
    - **Linked Clone** *(Instant, 0 extra disk space)*
    - **Full Clone** *(Independent copy)*
@@ -132,9 +142,7 @@ A pre-built, sanitized master LXC template is stored in Proxmox with all depende
 4. Go to **Network** $\rightarrow$ assign your static IP (or leave as DHCP).
 5. Start container!
 
-*Alternatively*, click **Create CT** at the top right $\rightarrow$ under **Template**, select `local:vztmpl/vowifi-gateway-clean-ubuntu-24.04.tar.zst`.
-
-#### Option 2: Proxmox CLI
+##### Option 2: Proxmox CLI
 ```bash
 # 1. Clone template (e.g. into VMID 108)
 pct clone 107 108 --hostname vowifi-sim2
