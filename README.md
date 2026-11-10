@@ -83,6 +83,7 @@ flowchart TD
   * [`docs/INBOUND_CALL_ONE_WAY_AUDIO.md`](docs/INBOUND_CALL_ONE_WAY_AUDIO.md) — Inbound call one-way audio, SDP fmtp answer alignment, and 10-second dropped call resolution.
   * [`docs/REVERSE_PROXY_WEBRTC_SETUP.md`](docs/REVERSE_PROXY_WEBRTC_SETUP.md) — Reverse proxy, domain & Cloudflare WebRTC softphone integration guide.
   * [`docs/ESIM_SETUP_AND_MANAGEMENT.md`](docs/ESIM_SETUP_AND_MANAGEMENT.md) — eSIM / eUICC profile download, switching, and lpac toolchain guide.
+  * [`docs/ANDROID_VOWIFI_APK_BLUEPRINT.md`](docs/ANDROID_VOWIFI_APK_BLUEPRINT.md) — Architecture blueprint for standalone Android APK with USB-C SIM reader and per-app OpenVPN.
   * [`docs/SOURCES_AND_ATTRIBUTION.md`](docs/SOURCES_AND_ATTRIBUTION.md) — Comprehensive attribution of upstream open-source projects and standards.
 * **[`configs/`](configs/)**: Production configuration examples and templates.
   * [`configs/proxmox/105.conf.example`](configs/proxmox/105.conf.example) — Sample active Proxmox container configuration.
